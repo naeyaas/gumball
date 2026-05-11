@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>gumball machine's</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cause:wght@100..900&family=Outfit:wght@100..900&display=swap');
+
+  :root {
+    --pink: #FFB5C8;
+    --pink-dark: #FF8FAD;
+    --pink-deep: #E8608A;
+    --peach: #FFCBA4;
+    --mint: #B8F0D8;
+    --lavender: #D4B8F0;
+    --yellow: #FFE8A3;
+    --sky: #B8E0F0;
+    --cream: #FFF5F0;
+    --machine-body: #FF9BB5;
+    --machine-dark: #E8608A;
+    --machine-metal: #C8A8E8;
+    --coin-gold: #FFD700;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Cause', sans-serif;
+    background: linear-gradient(135deg, #FFF0F5 0%, #F5EEFF 50%, #EFF8FF 100%);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ===== FLOATING HEARTS BG ===== */
+  .hearts-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .heart-particle {
+    position: absolute;
+    font-size: 16px;
+    opacity: 0;
+    animation: floatHeart linear infinite;
+  }
+  @keyframes floatHeart {
+    0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* ===== MAIN LAYOUT ===== */
+  .app {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  /* ===== TITLE ===== */
+  .title {
+    font-family: 'Outfit', cursive;
+    font-size: clamp(22px, 6vw, 32px);
+    color: var(--pink-deep);
+    text-align: center;
+    display: none;
+    margin-bottom: 4px;
+    text-shadow: 2px 2px 0px rgba(232,96,138,0.2);
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #C084A0;
+    text-align: center;
+    margin-bottom: 40px;
+    font-weight: 600;
+  }
+
+  /* ===== MACHINE WRAPPER ===== */
+  .machine-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  /* ===== COUNTER ===== */
+  .counter-display {
+    background: #2D1B2E;
+    border-radius: 8px;
+    padding: 4px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    color: #ffffff;
+    letter-spacing: 3px;
+    text-shadow: 0 0 8px #FF69B4;
+    margin-bottom: 25px;
+    border: 1px solid #4A2D4E;
+    box-shadow: 0 0 12px rgba(255,105,180,0.3) inset;
+  }
+
+  /* ===== SVG MACHINE ===== */
+  #machine-svg { width: 100%; max-width: 300px; filter: drop-shadow(0 8px 24px rgba(200,80,120,0.25)); }
+
+  /* ===== LEVER CLICKABLE ===== */
+  #leverGroup { transition: filter 0.2s; }
+  #leverGroup:hover circle:last-child { filter: brightness(1.15); }
+  #leverGroup.disabled { cursor: not-allowed; opacity: 0.5; pointer-events: none; }
+
+  /* Pulse hint on the knob */
+  @keyframes knobPulse {
+    0%,100% { filter: drop-shadow(0 0 0px #FF6B9D); }
+    50% { filter: drop-shadow(0 0 8px #FF6B9D); }
+  }
+  #leverGroup { animation: knobPulse 2s ease-in-out infinite; }
+
+  /* ===== TRAY / CATCH AREA ===== */
+  .tray-area {
+    position: relative;
+    width: 120px;
+    height: 50px;
+    margin-top: -8px;
+  }
+
+  /* ===== FALLING BALL ANIMATION ===== */
+  .falling-ball {
+    position: absolute;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.2), inset 3px 3px 6px rgba(255,255,255,0.5);
+    animation: fallDown 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    z-index: 10;
+  }
+  @keyframes fallDown {
+    0% { top: -120px; opacity: 1; transform: translateX(-50%) scale(0.6) rotate(0deg); }
+    60% { top: 10px; transform: translateX(-50%) scale(1.1) rotate(180deg); }
+    75% { top: 2px; transform: translateX(-50%) scale(0.95) rotate(200deg); }
+    90% { top: 8px; transform: translateX(-50%) scale(1.02) rotate(220deg); }
+    100% { top: 5px; transform: translateX(-50%) scale(1) rotate(240deg); opacity: 1; }
+  }
+
+  /* ===== OVERLAY (ZOOM BALL) ===== */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .overlay.active { opacity: 1; pointer-events: all; }
+
+  .tap-hint {
+    font-family: 'Outfit', cursive;
+    font-size: 20px;
+    color: white;
+    text-align: center;
+    /*animation: bounce 1s ease-in-out infinite;*/
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  .big-ball {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: inset -12px -12px 20px rgba(0,0,0,0.2), inset 8px 8px 16px rgba(255,255,255,0.5), 0 16px 40px rgba(0,0,0,0.4);
+    position: relative;
+    transition: transform 0.15s;
+    user-select: none;
+    transform-origin: center;
+  }
+  .big-ball::after {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 20%;
+    width: 30%;
+    height: 20%;
+    background: rgba(255,255,255,0.6);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+    filter: blur(2px);
+  }
+  .big-ball.shake1 { animation: shake 0.4s ease; }
+  .big-ball.shake2 { animation: shakeStrong 0.4s ease; }
+  @keyframes shake {
+    0%,100%{transform:rotate(0deg) scale(1)}
+    20%{transform:rotate(-8deg) scale(1.05)}
+    40%{transform:rotate(8deg) scale(1.05)}
+    60%{transform:rotate(-5deg) scale(1.02)}
+    80%{transform:rotate(5deg) scale(1.02)}
+  }
+  @keyframes shakeStrong {
+    0%,100%{transform:rotate(0deg) scale(1)}
+    15%{transform:rotate(-15deg) scale(1.1)}
+    30%{transform:rotate(15deg) scale(1.1)}
+    45%{transform:rotate(-10deg) scale(1.05)}
+    60%{transform:rotate(10deg) scale(1.05)}
+    75%{transform:rotate(-5deg) scale(1.02)}
+    90%{transform:rotate(5deg) scale(1.02)}
+  }
+  .tap-count {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--pink-deep);
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Outfit', cursive;
+    font-size: 16px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  }
+
+  /* ===== CRACK EFFECT ===== */
+  .crack-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .big-ball.cracking .crack-overlay { opacity: 1; }
+  .crack-line {
+    position: absolute;
+    background: rgba(255,255,255,0.9);
+    transform-origin: center;
+    border-radius: 2px;
+  }
+
+  /* ===== BURST ANIMATION ===== */
+  .burst {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 101;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .burst-particle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    opacity: 0;
+  }
+
+  /* ===== SCROLL MESSAGE ===== */
+  .scroll-reveal {
+    position: fixed;
+    inset: 0;
+    z-index: 102;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  .scroll-reveal.active { opacity: 1; pointer-events: all; }
+  .scroll-paper {
+    background: linear-gradient(135deg, #FFF9F0, #FFF0F5);
+    border-radius: 10px;
+    padding: 28px 24px;
+    max-width: 300px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 4px 0px var(--pink-dark);
+    position: relative;
+    transform: scale(0.5) rotateZ(-5deg);
+    animation: unrollScroll 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    border: 1px solid var(--pink);
+  }
+  @keyframes unrollScroll {
+    from { transform: scale(0.3) rotateZ(-10deg); opacity: 0; }
+    to { transform: scale(1) rotateZ(0deg); opacity: 1; }
+  }
+  .scroll-paper::before {
+    content: 'tw g';
+    font-size: 22px;
+    display: none;
+    margin-bottom: 12px;
+  }
+  .scroll-message {
+    font-family: 'Cause', sans-serif;
+    font-size: 14px;
+    color: var(--pink-deep);
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .scroll-close {
+    background: linear-gradient(135deg, var(--pink), var(--pink-deep));
+    border: none;
+    border-radius: 10px;
+    padding: 8px 15px;
+    color: white;
+    font-family: 'Outfit', cursive;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(232,96,138,0.4);
+    transition: transform 0.1s;
+  }
+  .scroll-close:active { transform: scale(0.95); }
+  .scroll-number {
+    font-size: 11px;
+    color: #C084A0;
+    margin-top: 8px;
+    font-weight: 600;
+    display: none;
+  }
+
+  /* ===== GUIDE POPUP ===== */
+  .guide-bubble {
+    position: fixed;
+    bottom: 20px;
+    right: 16px;
+    max-width: 200px;
+    background: white;
+    border-radius: 16px 16px 4px 16px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #D44080;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    border: 2px solid var(--pink);
+    z-index: 50;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    line-height: 1.4;
+  }
+  .guide-bubble.show { transform: translateY(0); opacity: 1; }
+  .guide-bubble .guide-emoji { font-size: 22px; display: block; margin-bottom: 4px; }
+
+  /* ===== EMPTY STATE ===== */
+  .empty-state {
+    text-align: center;
+    font-family: 'Outfit', cursive;
+    color: var(--pink-deep);
+    font-size: 16px;
+    margin-top: 8px;
+    opacity: 0;
+    transition: opacity 0.5s;
+  }
+  .empty-state.show { opacity: 1; }
+
+  /* ===== LEVER ROTATE ANIMATION ===== */
+  @keyframes leverPull {
+    0% { transform: rotate(0deg); }
+    30% { transform: rotate(35deg); }
+    60% { transform: rotate(-5deg); }
+    80% { transform: rotate(15deg); }
+    100% { transform: rotate(0deg); }
+  }
+  .lever-anim { animation: leverPull 0.5s ease-in-out; }
+
+  /* confetti particles */
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    opacity: 0;
+    animation: confettiFall 1.5s ease-in forwards;
+    z-index: 200;
+    pointer-events: none;
+  }
+  @keyframes confettiFall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(300px) rotate(720deg); }
+  }
+
+  /* shimmer on big ball */
+  @keyframes shimmer {
+    0%,100%{box-shadow:inset -12px -12px 20px rgba(0,0,0,0.2), inset 8px 8px 16px rgba(255,255,255,0.5), 0 16px 40px rgba(0,0,0,0.4)}
+    50%{box-shadow:inset -12px -12px 20px rgba(0,0,0,0.2), inset 8px 8px 16px rgba(255,255,255,0.7), 0 16px 40px rgba(0,0,0,0.4), 0 0 30px currentColor}
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating hearts background -->
+<div class="hearts-bg" id="heartsContainer"></div>
+
+<div class="app">
+  <div class="title">gumball machine</div>
+  <div class="subtitle">klik tuas mesinnya</div>
+
+  <div class="machine-wrapper">
+    <!-- Counter -->
+    <div class="counter-display" id="counterDisplay">20 / 20</div>
+
+    <!-- SVG MACHINE -->
+    <svg id="machine-svg" viewBox="0 0 300 420" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Glass gradient for globe -->
+        <radialGradient id="glassGrad" cx="38%" cy="32%" r="65%">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.85)"/>
+          <stop offset="35%" stop-color="rgba(255,220,235,0.45)"/>
+          <stop offset="70%" stop-color="rgba(240,180,210,0.25)"/>
+          <stop offset="100%" stop-color="rgba(210,120,160,0.35)"/>
+        </radialGradient>
+        <!-- Glass rim gradient -->
+        <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#E8B4CC"/>
+          <stop offset="30%" stop-color="#FFE0EE"/>
+          <stop offset="70%" stop-color="#FFCCE0"/>
+          <stop offset="100%" stop-color="#D890B4"/>
+        </linearGradient>
+        <!-- Body gradient -->
+        <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFB5C8"/>
+          <stop offset="50%" stop-color="#FF8FAD"/>
+          <stop offset="100%" stop-color="#E8608A"/>
+        </linearGradient>
+        <!-- Metal gradient -->
+        <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#E8D0F8"/>
+          <stop offset="50%" stop-color="#C8A8E8"/>
+          <stop offset="100%" stop-color="#A888C8"/>
+        </linearGradient>
+        <!-- Tray gradient -->
+        <linearGradient id="trayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="#FFD0E4"/>
+          <stop offset="100%" stop-color="#FF9BBF"/>
+        </linearGradient>
+        <!-- Shine on glass -->
+        <radialGradient id="shineGrad" cx="30%" cy="25%" r="45%">
+          <stop offset="0%" stop-color="rgba(255,255,255,0.9)"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </radialGradient>
+        <!-- Gumball gradients -->
+        <radialGradient id="gb-pink" cx="35%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#FFD6E0"/>
+          <stop offset="100%" stop-color="#FF6B9D"/>
+        </radialGradient>
+        <radialGradient id="gb-mint" cx="35%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#E0FFF4"/>
+          <stop offset="100%" stop-color="#4ECDC4"/>
+        </radialGradient>
+        <radialGradient id="gb-lav" cx="35%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#F0E0FF"/>
+          <stop offset="100%" stop-color="#9B59B6"/>
+        </radialGradient>
+        <radialGradient id="gb-yel" cx="35%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#FFFAE0"/>
+          <stop offset="100%" stop-color="#F1C40F"/>
+        </radialGradient>
+        <radialGradient id="gb-sky" cx="35%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#E0F4FF"/>
+          <stop offset="100%" stop-color="#3498DB"/>
+        </radialGradient>
+        <radialGradient id="gb-pch" cx="35%" cy="30%" r="60%">
+          <stop offset="0%" stop-color="#FFE8D6"/>
+          <stop offset="100%" stop-color="#FF8C42"/>
+        </radialGradient>
+        <clipPath id="globeClip">
+          <circle cx="150" cy="135" r="105"/>
+        </clipPath>
+      </defs>
+
+      <!-- ===== BASE / FOOT ===== -->
+      <ellipse cx="150" cy="410" rx="60" ry="10" fill="rgba(200,80,120,0.2)"/>
+      <rect x="110" y="388" width="80" height="22" rx="8" fill="url(#bodyGrad)"/>
+      <rect x="114" y="388" width="72" height="8" rx="4" fill="rgba(255,255,255,0.3)"/>
+
+      <!-- ===== PEDESTAL ===== -->
+      <rect x="120" y="310" width="60" height="82" rx="6" fill="url(#bodyGrad)"/>
+      <!-- pedestal shine -->
+      <rect x="124" y="314" width="20" height="74" rx="4" fill="rgba(255,255,255,0.2)"/>
+
+      <!-- ===== TRAY (output) ===== -->
+      <path d="M105,340 Q105,360 120,365 L180,365 Q195,360 195,340 Z" fill="url(#trayGrad)" stroke="#FF9BBF" stroke-width="1.5"/>
+      <ellipse cx="150" cy="341" rx="45" ry="8" fill="rgba(255,255,255,0.3)"/>
+      <!-- tray hole -->
+      <ellipse cx="150" cy="341" rx="20" ry="5" fill="rgba(200,80,120,0.3)"/>
+
+      <!-- ===== BODY (neck/can) ===== -->
+      <rect x="118" y="228" width="64" height="88" rx="8" fill="url(#metalGrad)"/>
+      <rect x="122" y="232" width="20" height="80" rx="4" fill="rgba(255,255,255,0.25)"/>
+
+      <!-- ===== COIN SLOT + MECHANISM ===== -->
+      <rect x="128" y="250" width="44" height="18" rx="6" fill="#9A70C0" stroke="#7A50A0" stroke-width="1"/>
+      <rect x="143" y="253" width="14" height="4" rx="2" fill="#5A3080"/>
+      <!-- screw details -->
+      <circle cx="134" cy="259" r="4" fill="#7A50A0"/>
+      <circle cx="166" cy="259" r="4" fill="#7A50A0"/>
+      <line x1="132" y1="259" x2="136" y2="259" stroke="#9A80C0" stroke-width="1"/>
+      <line x1="134" y1="257" x2="134" y2="261" stroke="#9A80C0" stroke-width="1"/>
+      <line x1="164" y1="259" x2="168" y2="259" stroke="#9A80C0" stroke-width="1"/>
+      <line x1="166" y1="257" x2="166" y2="261" stroke="#9A80C0" stroke-width="1"/>
+
+      <!-- ===== LEVER (clickable) ===== -->
+      <g id="leverGroup" style="transform-origin: 215px 270px; cursor: pointer;" onclick="handleLever()">
+        <circle cx="194" cy="270" r="10" fill="url(#metalGrad)" stroke="#9A70C0" stroke-width="1.5"/>
+        <rect x="194" y="260" width="36" height="10" rx="5" fill="url(#metalGrad)" stroke="#9A70C0" stroke-width="1"/>
+        <circle cx="232" cy="265" r="12" fill="#FF6B9D" stroke="#E8608A" stroke-width="2"/>
+        <circle cx="230" cy="263" r="5" fill="rgba(255,255,255,0.5)"/>
+      </g>
+
+      <!-- ===== GLOBE BACK WALL (behind gumballs) ===== -->
+      <circle cx="150" cy="135" r="105" fill="rgba(255,200,220,0.4)" stroke="url(#rimGrad)" stroke-width="3"/>
+
+      <!-- ===== GUMBALLS (clipped inside globe) ===== -->
+      <g clip-path="url(#globeClip)" id="gumballGroup">
+        <!-- Row 1 (bottom) - 5 balls -->
+        <circle cx="112" cy="215" r="16" fill="url(#gb-pink)"/><circle cx="112" cy="215" r="5" fill="rgba(255,255,255,0.6)" cx2="107" cy2="210" transform="translate(-3,-4)"/>
+        <circle cx="135" cy="218" r="16" fill="url(#gb-mint)"/>
+        <circle cx="158" cy="215" r="16" fill="url(#gb-lav)"/>
+        <circle cx="181" cy="218" r="16" fill="url(#gb-yel)"/>
+        <circle cx="200" cy="212" r="14" fill="url(#gb-sky)"/>
+
+        <!-- Row 2 - 5 balls -->
+        <circle cx="103" cy="187" r="15" fill="url(#gb-pch)"/>
+        <circle cx="126" cy="190" r="15" fill="url(#gb-lav)"/>
+        <circle cx="150" cy="187" r="15" fill="url(#gb-pink)"/>
+        <circle cx="174" cy="190" r="15" fill="url(#gb-mint)"/>
+        <circle cx="196" cy="185" r="14" fill="url(#gb-yel)"/>
+
+        <!-- Row 3 - 4 balls -->
+        <circle cx="113" cy="161" r="15" fill="url(#gb-sky)"/>
+        <circle cx="138" cy="158" r="15" fill="url(#gb-pink)"/>
+        <circle cx="162" cy="161" r="15" fill="url(#gb-pch)"/>
+        <circle cx="186" cy="157" r="14" fill="url(#gb-lav)"/>
+
+        <!-- Row 4 - 4 balls -->
+        <circle cx="120" cy="133" r="14" fill="url(#gb-mint)"/>
+        <circle cx="144" cy="130" r="14" fill="url(#gb-yel)"/>
+        <circle cx="168" cy="133" r="14" fill="url(#gb-pink)"/>
+        <circle cx="190" cy="128" r="13" fill="url(#gb-sky)"/>
+
+        <!-- Row 5 - 2 balls (top) -->
+        <circle cx="138" cy="105" r="13" fill="url(#gb-lav)"/>
+        <circle cx="161" cy="102" r="13" fill="url(#gb-pch)"/>
+
+        <!-- Shine highlights on some balls -->
+        <circle cx="109" cy="210" r="5" fill="rgba(255,255,255,0.6)"/>
+        <circle cx="132" cy="213" r="4" fill="rgba(255,255,255,0.5)"/>
+        <circle cx="147" cy="125" r="4" fill="rgba(255,255,255,0.55)"/>
+        <circle cx="122" cy="153" r="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+
+      <!-- ===== GLASS FRONT (over gumballs) ===== -->
+      <circle cx="150" cy="135" r="105" fill="url(#glassGrad)" stroke="url(#rimGrad)" stroke-width="3"/>
+      <!-- Glass shine -->
+      <ellipse cx="118" cy="95" rx="32" ry="22" fill="url(#shineGrad)" opacity="0.7"/>
+      <!-- Rim highlight -->
+      <path d="M 60,115 A 90,90 0 0 1 150,30" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="3" stroke-linecap="round"/>
+
+      <!-- ===== CAP TOP ===== -->
+      <ellipse cx="150" cy="30" rx="48" ry="14" fill="url(#rimGrad)"/>
+      <ellipse cx="150" cy="26" rx="44" ry="10" fill="#FFE0EE"/>
+      <ellipse cx="150" cy="22" rx="30" ry="7" fill="#FF8FAD"/>
+      <circle cx="150" cy="18" r="10" fill="#FF6B9D"/>
+      <circle cx="147" cy="15" r="4" fill="rgba(255,255,255,0.5)"/>
+
+      <!-- ===== GLOBE-BODY CONNECTOR ===== -->
+      <rect x="132" y="230" width="36" height="14" rx="5" fill="url(#rimGrad)"/>
+    </svg>
+
+    <!-- Tray area for falling ball -->
+    <div class="tray-area" id="trayArea" style="position:relative;width:120px;height:50px;margin-top:-8px;"></div>
+
+    <div class="empty-state" id="emptyState">
+      udah abissss<br> pyapyay!.
+    </div>
+  </div>
+</div>
+
+<!-- Overlay for tapping the ball -->
+<div class="overlay" id="overlay">
+  <div class="tap-hint" id="tapHint">ketuk bolanya 3x buat ngebuka!</div>
+  <div style="position:relative;">
+    <div class="big-ball" id="bigBall" onclick="handleTap()">
+      <div class="crack-overlay" id="crackOverlay"></div>
+      <div class="tap-count" id="tapCount">0</div>
+    </div>
+  </div>
+</div>
+
+<!-- Burst animation container -->
+<div class="burst" id="burst" style="display:none;"></div>
+
+<!-- Scroll reveal -->
+<div class="scroll-reveal" id="scrollReveal">
+  <div class="scroll-paper">
+    <div class="scroll-message" id="scrollMessage">ceritanya pesan romantis</div>
+    <div class="scroll-number" id="scrollNumber">#1 dari 20</div>
+    <button class="scroll-close" onclick="closeScroll()">o yh</button>
+  </div>
+</div>
+
+<!-- Guide bubble -->
+<div class="guide-bubble" id="guideBubble">
+  <span class="guide-emoji">🍬</span>
+  <span id="guideText">puter itu tuasnya buat dapetin permen</span>
+</div>
+
+<script>
+// ===== DATA =====
+const MESSAGES = [
+  "aku gabisa bikin kalimat konyol banyak bgini tp iyaudalah gpp",
+  "kamu aneh, bloon, gajelas.",
+  "coba bilang unyah.",
+  "aku gaperna mau buang waktu, tapi sama kamu udah kebuang banyak.",
+  "kamu udah kejebak ama aku, jgn kmn mn y, aku mager cari org laen.",
+  "na na na na na, anggep ini iklan.",
+  "aku sayang kamu.",
+  "selamat bulan mei.",
+  "meskipun kamu bloon, nyebelin, jawir, gpp iloveu.",
+  "unyah, anggep aja ini zonk.",
+  "kamu doang alesan hp aku mesti keabisan batre.",
+  "notifmu bikin aku nyengir kayak wong stress.",
+  "yh hhh aku harap kamu seneng terus, sekalipun di hari hari yg bikin cape.",
+  "moga hari harimu terang terus. jujur asbun.",
+  "gatau.",
+  "makasih ya, makasih udah bloon dan sabar ama aku.",
+  "aku doain kamu sehat terus, bahagia terus, dan sama aku terus",
+  "stay healthy, stay happy, and stay mine yh.",
+  "don't forget to breathe 𓆝 𓆟 𓆞",
+  "i love you sayang, more than words can say hhhhhh"
+];
+
+const GUIDE_TEXTS = [
+  { text: "yay! dapet" },
+  { text: "ini isinya apaan?" },
+  { text: "ini spesial buat kamu kayanya" },
+  { text: "jejejererengjeng!" },
+  { text: "abisin" },
+  { text: "setiap permen isinya beda tau!" },
+  { text: "pesannya disiapin pake NIAT!" },
+  { text: "senyum g" },
+  { text: "awh!" },
+  { text: "masi banyak lagi itu" }
+];
+
+const BALL_COLORS = [
+  '#FF6B9D', '#4ECDC4', '#9B59B6', '#F1C40F', '#3498DB',
+  '#FF8C42', '#E91E63', '#00BCD4', '#673AB7', '#CDDC39',
+  '#2196F3', '#FF5722', '#009688', '#9C27B0', '#FFC107',
+  '#03A9F4', '#E91E63', '#4CAF50', '#FF9800', '#8BC34A'
+];
+
+// ===== STATE =====
+let remaining = 20;
+let isAnimating = false;
+let currentBallColor = '';
+let tapCount = 0;
+let usedMessages = [];
+let currentMessageIndex = -1;
+let shownMessages = [];
+
+// ===== INIT =====
+function init() {
+  createHearts();
+  showGuide("kumpulan kalimat aneh buat kamu");
+  updateCounter();
+}
+
+// ===== HEARTS =====
+function createHearts() {
+  const container = document.getElementById('heartsContainer');
+  const emojis = ['ʚɞ'];
+  for (let i = 0; i < 20; i++) {
+    const el = document.createElement('div');
+    el.className = 'heart-particle';
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.fontSize = (10 + Math.random() * 14) + 'px';
+    el.style.animationDuration = (8 + Math.random() * 12) + 's';
+    el.style.animationDelay = Math.random() * 12 + 's';
+    el.style.opacity = 0;
+    container.appendChild(el);
+  }
+}
+
+// ===== COUNTER =====
+function updateCounter() {
+  document.getElementById('counterDisplay').textContent = `${remaining} / 20`;
+  if (remaining === 0) {
+    document.getElementById('leverGroup').classList.add('disabled');
+    document.getElementById('emptyState').classList.add('show');
+  }
+}
+
+// ===== HANDLE LEVER =====
+function handleLever() {
+  if (isAnimating || remaining <= 0) return;
+  isAnimating = true;
+  remaining--;
+
+  // Play lever sound
+  playSound('lever');
+
+  // Animate SVG lever
+  const lever = document.getElementById('leverGroup');
+  lever.style.animation = 'leverPull 0.5s ease-in-out';
+  setTimeout(() => { lever.style.animation = 'knobPulse 2s ease-in-out infinite'; }, 600);
+
+  // Pick a random ball color
+  currentBallColor = BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
+
+  // Remove one visual gumball from SVG
+  setTimeout(() => {
+    const group = document.getElementById('gumballGroup');
+    const balls = group.querySelectorAll('circle');
+    if (balls.length > 0) {
+      const lastBall = balls[balls.length - 1];
+      lastBall.style.transition = 'opacity 0.4s';
+      lastBall.style.opacity = '0';
+      setTimeout(() => lastBall.remove(), 400);
+    }
+    updateCounter();
+  }, 300);
+
+  // Show falling ball
+  setTimeout(() => {
+    showFallingBall();
+  }, 500);
+
+  // Show guide
+  const guideItem = GUIDE_TEXTS[Math.floor(Math.random() * GUIDE_TEXTS.length)];
+  setTimeout(() => showGuide(guideItem.text, guideItem.emoji), 800);
+}
+
+// ===== FALLING BALL =====
+function showFallingBall() {
+  playSound('fall');
+  const tray = document.getElementById('trayArea');
+  const ball = document.createElement('div');
+  ball.className = 'falling-ball';
+  ball.style.background = `radial-gradient(circle at 35% 30%, ${lightenColor(currentBallColor, 40)}, ${currentBallColor})`;
+  tray.appendChild(ball);
+
+  setTimeout(() => {
+    tray.removeChild(ball);
+    showOverlay();
+    isAnimating = false;
+  }, 900);
+}
+
+function lightenColor(hex, amount) {
+  const num = parseInt(hex.replace('#',''), 16);
+  const r = Math.min(255, (num >> 16) + amount);
+  const g = Math.min(255, ((num >> 8) & 0xFF) + amount);
+  const b = Math.min(255, (num & 0xFF) + amount);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ===== OVERLAY (zoom ball) =====
+function showOverlay() {
+  tapCount = 0;
+  const overlay = document.getElementById('overlay');
+  const bigBall = document.getElementById('bigBall');
+  const tapCountEl = document.getElementById('tapCount');
+
+  bigBall.style.background = `radial-gradient(circle at 35% 30%, ${lightenColor(currentBallColor, 50)}, ${currentBallColor})`;
+  bigBall.className = 'big-ball';
+  document.getElementById('crackOverlay').innerHTML = '';
+  tapCountEl.textContent = '0';
+  document.getElementById('tapHint').textContent = '3x ketuk buat ngebuka!';
+
+  overlay.classList.add('active');
+}
+
+function handleTap() {
+  if (tapCount >= 3) return;
+  tapCount++;
+  const bigBall = document.getElementById('bigBall');
+  const tapCountEl = document.getElementById('tapCount');
+  tapCountEl.textContent = tapCount;
+
+  playSound('tap');
+
+  if (tapCount === 1) {
+    bigBall.classList.remove('shake1', 'shake2');
+    void bigBall.offsetWidth;
+    bigBall.classList.add('shake1');
+    document.getElementById('tapHint').textContent = 'lagi';
+    addCrackLines(1);
+  } else if (tapCount === 2) {
+    bigBall.classList.remove('shake1', 'shake2');
+    void bigBall.offsetWidth;
+    bigBall.classList.add('shake2');
+    document.getElementById('tapHint').textContent = 'sekali lagi';
+    addCrackLines(2);
+  } else if (tapCount === 3) {
+    bigBall.classList.add('cracking');
+    document.getElementById('tapHint').textContent = 'pecah';
+    addCrackLines(3);
+    setTimeout(() => {
+      document.getElementById('overlay').classList.remove('active');
+      showBurst();
+      setTimeout(() => showScroll(), 600);
+    }, 400);
+    playSound('crack');
+  }
+}
+
+function addCrackLines(stage) {
+  const overlay = document.getElementById('crackOverlay');
+  overlay.innerHTML = '';
+  const count = stage * 3;
+  for (let i = 0; i < count; i++) {
+    const line = document.createElement('div');
+    line.className = 'crack-line';
+    const angle = (i / count) * 360 + Math.random() * 20;
+    const length = 20 + Math.random() * 40;
+    const width = 1 + Math.random() * 2;
+    line.style.cssText = `
+      position:absolute; background:rgba(255,255,255,0.85);
+      width:${length}px; height:${width}px;
+      top:${40+Math.random()*30}px; left:${20+Math.random()*60}px;
+      transform:rotate(${angle}deg); border-radius:2px;
+      box-shadow:0 0 4px rgba(255,255,255,0.5);
+    `;
+    overlay.appendChild(line);
+  }
+}
+
+// ===== BURST =====
+function showBurst() {
+  const burst = document.getElementById('burst');
+  burst.style.display = 'flex';
+  burst.innerHTML = '';
+  const colors = [currentBallColor, '#FFB5C8', '#FFE8A3', '#B8F0D8', '#D4B8F0', '#FFD700'];
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'burst-particle';
+    const angle = (i / 20) * 360;
+    const dist = 80 + Math.random() * 80;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    p.style.cssText = `
+      position:fixed; width:${6+Math.random()*10}px; height:${6+Math.random()*10}px;
+      border-radius:${Math.random()>0.5?'50%':'3px'};
+      background:${color};
+      top:calc(50% - 5px); left:calc(50% - 5px);
+      animation: none;
+    `;
+    burst.appendChild(p);
+    // animate out
+    setTimeout(() => {
+      p.style.transition = `all 0.8s cubic-bezier(0.25,0.46,0.45,0.94)`;
+      p.style.transform = `translate(${Math.cos(angle*Math.PI/180)*dist}px, ${Math.sin(angle*Math.PI/180)*dist}px) scale(0)`;
+      p.style.opacity = '0';
+    }, 10 + i * 10);
+  }
+  // confetti
+  for (let i = 0; i < 15; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.cssText = `
+      position:fixed;
+      left:${20+Math.random()*60}vw;
+      top:${20+Math.random()*30}vh;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${6+Math.random()*6}px; height:${6+Math.random()*6}px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation: confettiFall ${0.8+Math.random()*0.8}s ease-in ${Math.random()*0.3}s forwards;
+    `;
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 2000);
+  }
+  setTimeout(() => { burst.style.display = 'none'; burst.innerHTML = ''; }, 1000);
+}
+
+// ===== SCROLL REVEAL =====
+function showScroll() {
+  // Pick unused message
+  if (usedMessages.length >= MESSAGES.length) usedMessages = [];
+  let idx;
+  do { idx = Math.floor(Math.random() * MESSAGES.length); } while (usedMessages.includes(idx));
+  usedMessages.push(idx);
+  currentMessageIndex = idx;
+
+  document.getElementById('scrollMessage').textContent = MESSAGES[idx];
+  document.getElementById('scrollNumber').textContent = `#${20 - remaining + 1} dari 20 permen 🍬`;
+
+  const scrollReveal = document.getElementById('scrollReveal');
+  // Reset animation
+  const paper = scrollReveal.querySelector('.scroll-paper');
+  paper.style.animation = 'none';
+  void paper.offsetWidth;
+  paper.style.animation = 'unrollScroll 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+
+  scrollReveal.classList.add('active');
+  playSound('scroll');
+}
+
+function closeScroll() {
+  document.getElementById('scrollReveal').classList.remove('active');
+  showGuide("masih banyak itu, puter lagi ampe abis!");
+}
+
+// ===== GUIDE BUBBLE =====
+let guideTimer;
+function showGuide(text, emoji) {
+  clearTimeout(guideTimer);
+  const bubble = document.getElementById('guideBubble');
+  document.getElementById('guideText').textContent = text;
+  bubble.querySelector('.guide-emoji').textContent = emoji;
+  bubble.classList.remove('show');
+  void bubble.offsetWidth;
+  bubble.classList.add('show');
+  guideTimer = setTimeout(() => bubble.classList.remove('show'), 4000);
+}
+
+// ===== SOUND (Web Audio API) =====
+let audioCtx;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSound(type) {
+  try {
+    const ctx = getAudio();
+    if (type === 'lever') {
+      // Mechanical click
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(300, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+      osc.start(); osc.stop(ctx.currentTime + 0.3);
+    } else if (type === 'fall') {
+      // Bounce sound
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.5);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.start(); osc.stop(ctx.currentTime + 0.5);
+    } else if (type === 'tap') {
+      // Click sound
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i/data.length);
+      const src = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass'; filter.frequency.value = 1200;
+      src.buffer = buf;
+      src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      src.start();
+    } else if (type === 'crack') {
+      // Crack/pop sound
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.15, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) {
+        const env = Math.pow(1 - i/data.length, 2);
+        data[i] = (Math.random() * 2 - 1) * env * 0.6;
+      }
+      const src = ctx.createBufferSource();
+      const gain = ctx.createGain();
+      src.buffer = buf;
+      src.connect(gain); gain.connect(ctx.destination);
+      gain.gain.value = 0.4;
+      src.start();
+    } else if (type === 'scroll') {
+      // Paper rustle
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.1);
+      osc.frequency.linearRampToValueAtTime(350, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    }
+  } catch(e) { /* silent fail */ }
+}
+
+// Close overlay on background click
+document.getElementById('overlay').addEventListener('click', function(e) {
+  if (e.target === this) {
+    this.classList.remove('active');
+    isAnimating = false;
+  }
+});
+
+// Prevent body scroll when overlay is open
+document.getElementById('overlay').addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+
+// Init!
+init();
+</script>
+</body>
+</html>
